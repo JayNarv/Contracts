@@ -6,17 +6,17 @@ contract Bank{
     
     struct Payout{
         uint256 amount;
-        uint256 unlocksAt; //creation time + time payment is locked for in minutes (while testing)
+        uint256 depositedAt; //creation time + time payment is locked for in minutes (while testing)
+        uint256 lockedFor;
     }
     
     mapping (uint256=>Payout) payouts;
     mapping (address=>uint256[]) clientsIndices;
-    address private bankOwner; //is allowed to add payouts
-    address testToken = 0xcc5a3e48dc55b9b7b699855d4910e83beb505bae;
+    address private bankOwner; //is allowed to add clients and payments
+    address testToken = address(0xcc5a3e48dc55b9b7b699855d4910e83beb505bae);
     uint256 index = 0; 
     
-    function Bank(
-        ) public {
+    function Bank() public { 
         bankOwner = msg.sender;
     }
     
@@ -28,8 +28,7 @@ contract Bank{
             Itoken token = Itoken(testToken);
             if(!token.transferFrom(msg.sender, address(this), _amount)) { throw; }
             else{
-                createdOn = block.timestamp;
-                var payout = Payout(_amount, now + _lockedFor);
+                var payout = Payout(_amount, now, _lockedFor);
                 payouts[index] = payout;
                 clientsIndices[_client].push(index);
                 index++;
@@ -37,7 +36,23 @@ contract Bank{
         }
     }
     
-    function withdraw(_client, _amount)public payable returns(bool){
-        //TODO
+    function withdraw(
+        address _client,
+        uint256 _amount,
+        uint256 _lockedFor
+        )public payable returns(bool){
+        if(!clientsIndices[msg.sender].isValue){throw;}
+        else{
+            
+            for(uint256 i = 0; i < clientsIndices[_client]; i++){
+                if( payouts[i].amount == _amount && 
+                    payouts[i].lockedFor == _lockedFor){
+                        Itoken token = Itoken(testToken);
+                        token.transfer(_client, _amount);
+                        return true; 
+                    }
+            }
+        }
+        return false;
     }
 }
