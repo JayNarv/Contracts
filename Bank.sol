@@ -21,32 +21,33 @@ contract Bank{
     }
     
     function addPayout (
-    address _client,
     uint256 _amount,
     uint256 _lockedFor) public{
-        if(msg.sender == bankOwner) {
+
             Itoken token = Itoken(testToken);
             if(!token.transferFrom(msg.sender, address(this), _amount)) { throw; }
             else{
                 var payout = Payout(_amount, now, _lockedFor);
                 payouts[index] = payout;
-                clientsIndices[_client].push(index);
+                clientsIndices[msg.sender].push(index);
                 index++;
             }
-        }
+
     }
     
     function withdraw(
-        address _client,
         uint256 _amount,
         uint256 _lockedFor
         )public payable returns(bool){
-            for(uint256 i = 0; i < clientsIndices[_client].length; i++){
-                if( payouts[clientsIndices[_client][i]].amount == _amount && 
-                    payouts[clientsIndices[_client][i]].lockedFor == _lockedFor &&
-                    now >= payouts[clientsIndices[_client][i]].lockedFor * 1 minutes + payouts[clientsIndices[_client][i]].depositedAt){
+                for(uint256 i = 0; i < clientsIndices[msg.sender].length; i++){
+                if( payouts[clientsIndices[msg.sender][i]].amount == _amount && 
+                    payouts[clientsIndices[msg.sender][i]].lockedFor == _lockedFor &&
+                    now >= payouts[clientsIndices[msg.sender][i]].lockedFor * 1 minutes + payouts[clientsIndices[msg.sender][i]].depositedAt){
                         Itoken token = Itoken(testToken);
-                        token.transfer(_client, _amount);
+                        token.transfer(msg.sender, _amount);
+                        //TODO  
+                        //TODO FORBID MULTIPLE PAYOUTS
+                        //TODO
                         return true; 
                     }
             }
