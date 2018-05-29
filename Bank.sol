@@ -6,8 +6,8 @@ contract Bank{
     
     struct Payout{
         uint256 amount;
-        uint256 depositedAt; //creation time + time payment is locked for in minutes (while testing)
-        uint256 lockedFor;
+        uint256 depositedAt; //creation time
+        uint256 lockedFor;   // time payment is locked for in minutes (while testing)
     }
     
     mapping (uint256=>Payout) payouts;
@@ -41,18 +41,15 @@ contract Bank{
         uint256 _amount,
         uint256 _lockedFor
         )public payable returns(bool){
-        if(!clientsIndices[msg.sender].isValue){throw;}
-        else{
-            
-            for(uint256 i = 0; i < clientsIndices[_client]; i++){
-                if( payouts[i].amount == _amount && 
-                    payouts[i].lockedFor == _lockedFor){
+            for(uint256 i = 0; i < clientsIndices[_client].length; i++){
+                if( payouts[clientsIndices[_client][i]].amount == _amount && 
+                    payouts[clientsIndices[_client][i]].lockedFor == _lockedFor &&
+                    now >= payouts[clientsIndices[_client][i]].lockedFor * 1 minutes + payouts[clientsIndices[_client][i]].depositedAt){
                         Itoken token = Itoken(testToken);
                         token.transfer(_client, _amount);
                         return true; 
                     }
             }
-        }
         return false;
     }
 }
